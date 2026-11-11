@@ -1,0 +1,22 @@
+In your lab notes, answer:
+
+In Step 3 you changed s2's behaviour without recompiling. Name two more things you could change that way, and two that would need a new program.
+2 changable things without recompiling:
+1) Table entries
+2) A table's default action
+
+2 thigns that need recompiling:
+1) A new header
+2) New pipeline logic: match key or action
+
+Why did the packet in Step 4 reach h3 and not h2 — and why did it still carry the tunnel header?
+The packet reached h3 and not h2 because the ingress control still applied only ipv4_lpm, and myTunnel_exact was still unused. And since we only touched the parser and deparser, the tunnel’s dst_id = 2 was parsed but but no table or action used it.
+It still carry the tunnel header because packet.emit(hdr.myTunnel) was added to the deparser. Nothing in the pipeline removed the tunnel header. The tunnel header was just carried along with the Ip header.
+
+Why did the tunnelled packet in Step 5 arrive with TTL 64, when the pings' replies had TTL 62?
+Because the myTunnel_forward action for the myTunnel table did not decrement the TTL as the ipv4_forward action did for the ipv4_lpm table.
+
+Across Steps 4–6, which mistakes did the compiler warn you about, and which did it miss? What does that tell you about testing P4 programs?
+In Step 1 and Step 4: myTunnel_exact declared but never applied, so it was removed (and topo.py skipped its entries). This was the only warning, and it disappeared once Step 5 applied the table.
+What was missed?
+=>Wrong detination faults did not warn me about anything. This means that programmers should program the code where it checks more than just if it arrived to a destination.
