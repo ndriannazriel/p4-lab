@@ -161,7 +161,7 @@ control MyDeparser(packet_out packet, in headers hdr) {
     apply {
         packet.emit(hdr.ethernet);
         // TODO (Step 4): emit the tunnel header (only valid headers are written)
-        //packet.emit(hdr.myTunnel);
+        packet.emit(hdr.myTunnel);
         packet.emit(hdr.ipv4);
     }
 }
