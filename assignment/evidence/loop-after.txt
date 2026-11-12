@@ -1,0 +1,102 @@
+mininet> sh ./p4cli s2 table_dump MyIngress.myTunnel_exact
+Done
+==========
+TABLE ENTRIES
+**********
+Dumping entry 0x0
+Match key:
+* myTunnel.dst_id     : EXACT     0001
+Action entry: MyIngress.myTunnel_forward - 01
+**********
+Dumping entry 0x1
+Match key:
+* myTunnel.dst_id     : EXACT     0002
+Action entry: MyIngress.myTunnel_forward - 02
+**********
+Dumping entry 0x2
+Match key:
+* myTunnel.dst_id     : EXACT     0003
+Action entry: MyIngress.myTunnel_forward - 03
+==========
+Dumping default entry
+Action entry: MyIngress.drop - 
+==========
+mininet> sh ./p4cli s2 "table_modify MyIngress.myTunnel_exact MyIngress.myTunnel_forward 2 1"
+Done
+Modifying entry 2 for exact match table MyIngress.myTunnel_exact
+mininet> sh ./p4cli s2 table_dump MyIngress.myTunnel_exact
+Done
+==========
+TABLE ENTRIES
+**********
+Dumping entry 0x0
+Match key:
+* myTunnel.dst_id     : EXACT     0001
+Action entry: MyIngress.myTunnel_forward - 01
+**********
+Dumping entry 0x1
+Match key:
+* myTunnel.dst_id     : EXACT     0002
+Action entry: MyIngress.myTunnel_forward - 02
+**********
+Dumping entry 0x2
+Match key:
+* myTunnel.dst_id     : EXACT     0003
+Action entry: MyIngress.myTunnel_forward - 01
+==========
+Dumping default entry
+Action entry: MyIngress.drop - 
+==========
+mininet> sh grep -c "Processing packet received" logs/s1.txt logs/s2.txt
+logs/s1.txt:811
+logs/s2.txt:810
+mininet> h1 python3 send.py 10.99.0.3 "loop" --tunnel 3
+###[ Ethernet ]### 
+  dst       = ff:ff:ff:ff:ff:ff
+  src       = 00:00:00:00:00:01
+  type      = 0x1212
+###[ MyTunnel ]### 
+     proto_id  = 2048
+     dst_id    = 3
+     hop_limit = 8
+###[ IP ]### 
+        version   = 4
+        ihl       = 5
+        tos       = 0x0
+        len       = 32
+        id        = 1
+        flags     = 
+        frag      = 0
+        ttl       = 64
+        proto     = udp
+        chksum    = 0x6603
+        src       = 10.99.0.1
+        dst       = 10.99.0.3
+        \options   \
+###[ UDP ]### 
+           sport     = 4321
+           dport     = 4321
+           len       = 12
+           chksum    = 0xed6a
+###[ Raw ]### 
+              load      = 'loop'
+
+Sent from h1-eth0.
+mininet> sh grep -c "Processing packet received" logs/s1.txt logs/s2.txt
+logs/s1.txt:816
+logs/s2.txt:814
+mininet> sh sleep 5; grep -c "Processing packet received" logs/s1.txt logs/s2.txt
+logs/s1.txt:816
+logs/s2.txt:814
+
+ADDITIONAL
+mininet> sh grep -B8 "Dropping packet" logs/s1.txt | tail -12
+[10:38:01.748] [bmv2] [D] [thread 14573] [4.0] [cxt 0] Looking up key:
+
+[10:38:01.748] [bmv2] [D] [thread 14573] [4.0] [cxt 0] Table 'tbl_drop': miss
+[10:38:01.748] [bmv2] [D] [thread 14573] [4.0] [cxt 0] Action entry is MyIngress.drop - 
+[10:38:01.748] [bmv2] [T] [thread 14573] [4.0] [cxt 0] Action MyIngress.drop
+[10:38:01.748] [bmv2] [T] [thread 14573] [4.0] [cxt 0] tunnel.p4(98) Primitive mark_to_drop(standard_metadata)
+[10:38:01.748] [bmv2] [D] [thread 14573] [4.0] [cxt 0] Pipeline 'ingress': end
+[10:38:01.748] [bmv2] [D] [thread 14573] [4.0] [cxt 0] Egress port is 511
+[10:38:01.748] [bmv2] [D] [thread 14573] [4.0] [cxt 0] Dropping packet at the end of ingress
